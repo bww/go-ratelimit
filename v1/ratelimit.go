@@ -3,6 +3,7 @@ package ratelimit
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 )
 
@@ -15,10 +16,20 @@ type State struct {
 	Reset     time.Time
 }
 
+// Attributes which may be factored into rate limiting implementations
+type Attrs map[string][]string
+
+// Derive rate limiting attributes from a HTTP request
+func AttrsFromRequest(req *http.Request) Attrs {
+	return Attrs(req.Header)
+}
+
 // A general purpose rate limiter
 type Limiter interface {
-	// Next returns the time at which the next request can be executed relative to the provided time
+	// Next returns the time at which the next request can be executed relative to the provided time. This is equivalent to calling NextWithAttrs with nil for the attributes parameter.
 	Next(time.Time) time.Time
+	// Next returns the time at which the next request can be executed relative to the provided time. If attributes are not available, nil should be provided.
+	NextWithAttrs(time.Time, Attrs) time.Time
 	// Wait blocks until the next request can be executed
 	Wait(context.Context, time.Time) (time.Time, error)
 	// State provides a snapshot of the rate limiter's general state. Not all implementations can fully describe this state.
@@ -72,6 +83,10 @@ func (l *Linear) State(rel time.Time) State {
 }
 
 func (l *Linear) Next(rel time.Time) time.Time {
+	return l.NextWithAttrs(rel, nil)
+}
+
+func (l *Linear) NextWithAttrs(rel time.Time, _ Attrs) time.Time {
 	dm := int64(l.delay / 1000)
 	return time.UnixMicro(((rel.UnixMicro() / dm) * dm) + int64(l.delay/1000)).UTC()
 }
