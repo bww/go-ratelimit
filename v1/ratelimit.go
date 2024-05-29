@@ -8,16 +8,27 @@ import (
 
 var ErrCanceled = errors.New("Canceled")
 
+// A snapshot of a Limiter's state
+type State struct {
+	Limit     int
+	Remaining int
+	Reset     time.Time
+}
+
 // A general purpose rate limiter
 type Limiter interface {
 	// Next returns the time at which the next request can be executed relative to the provided time
 	Next(time.Time) time.Time
 	// Wait blocks until the next request can be executed
 	Wait(context.Context, time.Time) (time.Time, error)
+	// State provides a snapshot of the rate limiter's general state. Not all implementations can fully describe this state.
+	State(time.Time) State
 }
 
 // General rate limiting configuration
 type Config struct {
+	// The initial base window reference time
+	Start time.Time
 	// The duration of a window: this is the period over which we limit the number of requests
 	Window time.Duration
 	// The number of events permitted within a single window
@@ -29,19 +40,34 @@ type Config struct {
 type Linear struct {
 	Config
 	base  time.Time
-	reset time.Time
 	delay time.Duration
-	n     int
 }
 
 func NewLinear(conf Config) *Linear {
-	now := time.Now()
+	var when time.Time
+	if !conf.Start.IsZero() {
+		when = conf.Start
+	} else {
+		when = time.Now()
+	}
 	return &Linear{
 		Config: conf,
-		base:   now,
-		reset:  now.Add(conf.Window),
+		base:   when,
 		delay:  conf.Window / time.Duration(conf.Events),
-		n:      0,
+	}
+}
+
+func (l *Linear) State(rel time.Time) State {
+	var (
+		nwin  = rel.Sub(l.base) / l.Window
+		start = l.base.Add(nwin * l.Window)
+		reset = start.Add(l.Window)
+		curr  = rel.Sub(start)
+	)
+	return State{
+		Limit:     l.Events,
+		Remaining: int((1 - (float64(curr) / float64(l.Window))) * float64(l.Events)),
+		Reset:     reset,
 	}
 }
 
