@@ -2,12 +2,9 @@ package ratelimit
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 )
-
-var ErrCanceled = errors.New("Canceled")
 
 // A snapshot of a Limiter's state
 type State struct {
