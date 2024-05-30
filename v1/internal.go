@@ -1,16 +1,8 @@
 package ratelimit
 
 import (
-	"net/http"
 	"sync"
 	"time"
-)
-
-type Mode int
-
-const (
-	Meter Mode = iota
-	Burst
 )
 
 const (
@@ -107,11 +99,11 @@ func (l *limiter) Dec() error {
 }
 
 // Back off incrementally, relative to the provided time
-func (l *limiter) Backoff(now time.Time) (time.Time, error) {
+func (l *limiter) Backoff(rel time.Time) (time.Time, error) {
 	l.Lock()
 	defer l.Unlock()
 	l.errcount++
-	until := now.Add(backoffDuration(l.backoffPeriod, l.errcount))
+	until := rel.Add(backoffDuration(l.backoffPeriod, l.errcount))
 	l.backoff = &until
 	return until, nil
 }
@@ -134,11 +126,7 @@ func (l *limiter) InvalidateBackoff() error {
 	return nil
 }
 
-func (l *limiter) Delay(req *http.Request) (time.Duration, error) {
-	return l.delay(req, time.Now())
-}
-
-func (l *limiter) delay(req *http.Request, now time.Time) (time.Duration, error) {
+func (l *limiter) Delay(rel time.Time) (time.Duration, error) {
 	var (
 		d, r time.Duration
 		b    *time.Time
@@ -153,7 +141,7 @@ func (l *limiter) delay(req *http.Request, now time.Time) (time.Duration, error)
 
 	// first, check for an existing backoff period
 	if v := l.backoff; v != nil {
-		if now.After(*v) {
+		if rel.After(*v) {
 			l.backoff = nil
 		} else {
 			b = v
@@ -163,7 +151,7 @@ func (l *limiter) delay(req *http.Request, now time.Time) (time.Duration, error)
 	// if we don't have one, determine if we have budget left, and if so
 	// consume a request; otherwise, the delay is until the window reset
 	if b == nil {
-		r = l.reset.Sub(now)
+		r = l.reset.Sub(rel)
 		if r < 0 {
 			r = 0 // can't have a negative reset window
 		}
@@ -180,7 +168,7 @@ func (l *limiter) delay(req *http.Request, now time.Time) (time.Duration, error)
 
 	// if we are in a backoff, the delay is until the backoff period ends
 	if b != nil {
-		return (*b).Sub(now), nil
+		return (*b).Sub(rel), nil
 	}
 	// if we have exhausted the current window, the delay is the end of the window
 	if d > 0 {

@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrCanceled       = errors.New("Canceled")
+	ErrMissingAttrs   = errors.New("Missing attributes")
 	ErrMissingHeaders = errors.New("Missing rate-limiting headers")
 )
 

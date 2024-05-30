@@ -86,6 +86,14 @@ type Durationer interface {
 	Time(int) time.Time
 }
 
+// Rate limiting modes
+type Mode int
+
+const (
+	Meter Mode = iota
+	Burst
+)
+
 // Common durationers
 var (
 	Seconds      = seconds{}
@@ -120,6 +128,8 @@ type Config struct {
 	Window time.Duration
 	// The number of events permitted within a single window
 	Events int
+	// The mode we are using to determine how we consume capacity
+	Mode Mode
 	// How are we converting durations; this is mainly only useful for header-based limiters
 	Durationer Durationer
 }

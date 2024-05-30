@@ -5,29 +5,29 @@ import (
 	"time"
 )
 
-// Linear implements a rate limiter which spreads out requests evenly
+// linear implements a rate limiter which spreads out requests evenly
 // over the window period.
-type Linear struct {
+type linear struct {
 	Config
 	base  time.Time
 	delay time.Duration
 }
 
-func NewLinear(conf Config) *Linear {
+func NewLinear(conf Config) *linear {
 	var when time.Time
 	if !conf.Start.IsZero() {
 		when = conf.Start
 	} else {
 		when = time.Now()
 	}
-	return &Linear{
+	return &linear{
 		Config: conf,
 		base:   when,
 		delay:  conf.Window / time.Duration(conf.Events),
 	}
 }
 
-func (l *Linear) State(rel time.Time) State {
+func (l *linear) State(rel time.Time) State {
 	var (
 		nwin  = rel.Sub(l.base) / l.Window
 		start = l.base.Add(nwin * l.Window)
@@ -41,12 +41,12 @@ func (l *Linear) State(rel time.Time) State {
 	}
 }
 
-func (l *Linear) Next(rel time.Time, opts ...Option) (time.Time, error) {
+func (l *linear) Next(rel time.Time, opts ...Option) (time.Time, error) {
 	dm := int64(l.delay / 1000)
 	return time.UnixMicro(((rel.UnixMicro() / dm) * dm) + int64(l.delay/1000)).UTC(), nil
 }
 
-func (l *Linear) Wait(cxt context.Context, rel time.Time, opts ...Option) (time.Time, error) {
+func (l *linear) Wait(cxt context.Context, rel time.Time, opts ...Option) (time.Time, error) {
 	t, err := l.Next(rel, opts...)
 	if err != nil {
 		return time.Time{}, err
@@ -59,7 +59,7 @@ func (l *Linear) Wait(cxt context.Context, rel time.Time, opts ...Option) (time.
 	}
 }
 
-func (l *Linear) Update(rel time.Time, opts ...Option) error {
+func (l *linear) Update(rel time.Time, opts ...Option) error {
 	// Linear implementation does not use post-operation state
 	return nil
 }
