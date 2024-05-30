@@ -40,6 +40,15 @@ func (c Options) With(opts []Option) Options {
 // A functional option
 type Option func(Options) Options
 
+// WithRequest is a convenience function which derives attributes from the
+// provided request and then applies them to the options. It is the equivalent
+// of:
+//
+//	WithAttrs(AttrsFromRequest(req))
+func WithRequest(v *http.Request) Option {
+	return WithAttrs(AttrsFromRequest(v))
+}
+
 // WithAttrs adds attributes to a set of options
 func WithAttrs(v Attrs) Option {
 	return func(c Options) Options {
