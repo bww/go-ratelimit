@@ -36,6 +36,7 @@ func NewHeaders(conf Config) *headers {
 			remaining:     conf.Events,
 			reset:         ext.Coalesce(conf.Start, time.Now()),
 			mode:          conf.Mode,
+			maxMeter:      conf.MaxDelay,
 			backoffPeriod: defaultBackoffPeriod,
 		},
 		dur: dur,

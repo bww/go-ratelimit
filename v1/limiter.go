@@ -73,7 +73,7 @@ type Limiter interface {
 	// Next returns the time at which the next request can be executed relative to the provided time.
 	Next(time.Time, ...Option) (time.Time, error)
 	// Wait blocks until the next request can be executed.
-	Wait(context.Context, time.Time) (time.Time, error)
+	Wait(context.Context, time.Time, ...Option) (time.Time, error)
 	// Update provides post-operation feedback to the rate limiter. An implementation may use this context or not.
 	Update(time.Time, ...Option) error
 	// State provides a snapshot of the rate limiter's general state. Not all implementations can fully describe this state.
@@ -132,4 +132,6 @@ type Config struct {
 	Mode Mode
 	// How are we converting durations; this is mainly only useful for header-based limiters
 	Durationer Durationer
+	// The maximum delay to wait between operations; not all implementations use this value
+	MaxDelay time.Duration
 }

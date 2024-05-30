@@ -35,39 +35,6 @@ type limiter struct {
 	maxMeter      time.Duration // maximum delay in metered mode, if > 0
 }
 
-func newLimiter(q, r int, e time.Time) limiter {
-	return limiter{
-		limit:         q,
-		remaining:     r,
-		reset:         e,
-		backoffPeriod: defaultBackoffPeriod,
-	}
-}
-
-func (l *limiter) SetMode(m Mode) {
-	l.Lock()
-	defer l.Unlock()
-	l.mode = m
-}
-
-func (l *limiter) SetMaxMeterDelay(d time.Duration) {
-	l.Lock()
-	defer l.Unlock()
-	l.maxMeter = d
-}
-
-func (l *limiter) SetTarget(t float64) {
-	l.Lock()
-	defer l.Unlock()
-	if t > 1 {
-		l.target = 1
-	} else if t < 0 {
-		l.target = 0
-	} else {
-		l.target = t
-	}
-}
-
 func (l *limiter) State() State {
 	l.Lock()
 	defer l.Unlock()
