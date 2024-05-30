@@ -3,6 +3,7 @@ package ratelimit
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -34,7 +35,7 @@ func NewHeaders(conf Config) *headers {
 		impl: limiter{
 			limit:         conf.Events,
 			remaining:     conf.Events,
-			reset:         ext.Coalesce(conf.Start, time.Now()),
+			reset:         ext.Coalesce(conf.Start, time.Now()).Add(conf.Window),
 			mode:          conf.Mode,
 			maxMeter:      conf.MaxDelay,
 			backoffPeriod: defaultBackoffPeriod,
@@ -140,8 +141,8 @@ func (l *headers) update(rel time.Time, attrs Attrs) error {
 
 func findAttr(attrs Attrs, alts ...string) (string, string) {
 	for _, e := range alts {
-		if v, ok := attrs[e]; ok && len(v) > 0 {
-			return e, v[0]
+		if v := http.Header(attrs).Get(e); v != "" {
+			return e, v
 		}
 	}
 	return "", ""
