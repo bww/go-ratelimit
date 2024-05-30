@@ -17,6 +17,7 @@ func TestLinear(t *testing.T) {
 		When  time.Time
 		Next  time.Time
 		State State
+		Error error
 	}{
 		{
 			When: time.Date(2024, 4, 12, 0, 0, 0, 0, time.UTC),
@@ -65,7 +66,12 @@ func TestLinear(t *testing.T) {
 		},
 	}
 	for i, e := range tests {
-		assert.Equal(t, e.Next, lim.Next(e.When), "#%d", i)
+		next, err := lim.Next(e.When)
+		if e.Error != nil {
+			assert.ErrorIs(t, err, e.Error, "#%d", i)
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, e.Next, next, "#%d", i)
+		}
 		assert.Equal(t, e.State, lim.State(e.When), "#%d", i)
 	}
 }
