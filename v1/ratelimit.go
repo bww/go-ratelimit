@@ -80,6 +80,38 @@ type Limiter interface {
 	State(time.Time) State
 }
 
+// A Durationer converts a value to a duration
+type Durationer interface {
+	Duration(int) time.Duration
+	Time(int) time.Time
+}
+
+// Common durationers
+var (
+	Seconds      = seconds{}
+	Milliseconds = milliseconds{}
+)
+
+// Interprets the value in seconds
+type seconds struct{}
+
+func (d seconds) Duration(v int) time.Duration {
+	return time.Duration(v) * time.Second
+}
+func (d seconds) Time(v int) time.Time {
+	return time.Unix(int64(v), 0)
+}
+
+// Interprets the value in milliseconds
+type milliseconds struct{}
+
+func (d milliseconds) Duration(v int) time.Duration {
+	return time.Duration(v) * time.Millisecond
+}
+func (d milliseconds) Time(v int) time.Time {
+	return time.Unix(int64(v)/1000, int64(v)%1000*int64(time.Millisecond))
+}
+
 // General rate limiting configuration
 type Config struct {
 	// The initial base window reference time
@@ -88,4 +120,6 @@ type Config struct {
 	Window time.Duration
 	// The number of events permitted within a single window
 	Events int
+	// How are we converting durations; this is mainly only useful for header-based limiters
+	Durationer Durationer
 }

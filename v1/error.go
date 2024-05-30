@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-var ErrCanceled = errors.New("Canceled")
+var (
+	ErrCanceled       = errors.New("Canceled")
+	ErrMissingHeaders = errors.New("Missing rate-limiting headers")
+)
 
 // RetryError represents a rate limiting error from a remote service that
 // indicates when we should attempt our operation again.
